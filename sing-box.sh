@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
 # 当前脚本版本号
-VERSION='v1.3.1 (2025.11.12)'
+VERSION='v1.3.2 (2025.12.11)'
+
+# Github 反代加速代理
+GITHUB_PROXY=('https://v6.gh-proxy.org/' 'https://gh-proxy.com/' 'https://hub.glowp.xyz/' 'https://proxy.vvvv.ee/')
 
 # 各变量默认值
-GH_PROXY='https://hub.glowp.xyz/'
 TEMP_DIR='/tmp/sing-box'
 WORK_DIR='/etc/sing-box'
 START_PORT_DEFAULT='8881'
@@ -16,7 +18,7 @@ TLS_SERVER_DEFAULT=addons.mozilla.org
 PROTOCOL_LIST=("XTLS + reality" "hysteria2" "tuic" "ShadowTLS" "shadowsocks" "trojan" "vmess + ws" "vless + ws + tls" "H2 + reality" "gRPC + reality" "AnyTLS")
 NODE_TAG=("xtls-reality" "hysteria2" "tuic" "ShadowTLS" "shadowsocks" "trojan" "vmess-ws" "vless-ws-tls" "h2-reality" "grpc-reality" "anytls")
 CONSECUTIVE_PORTS=${#PROTOCOL_LIST[@]}
-CDN_DOMAIN=("skk.moe" "ip.sb" "time.is" "cfip.xxxxxxxx.tk" "bestcf.top" "cdn.2020111.xyz" "xn--b6gac.eu.org")
+CDN_DOMAIN=("skk.moe" "ip.sb" "time.is" "cfip.xxxxxxxx.tk" "bestcf.top" "cdn.2020111.xyz" "xn--b6gac.eu.org" "cf.090227.xyz")
 SUBSCRIBE_TEMPLATE="https://raw.githubusercontent.com/fscarmen/client_template/main"
 DEFAULT_NEWEST_VERSION='1.12.0-beta.15'
 
@@ -28,8 +30,8 @@ mkdir -p $TEMP_DIR
 
 E[0]="Language:\n 1. English (default) \n 2. 简体中文"
 C[0]="${E[0]}"
-E[1]="\\n 1. Reality Configuration Update: In Reality configurations, the original multiplexing (multiplex) has been replaced with xtls-rprx-vision flow control, improving transmission efficiency, reducing latency, and enhancing security. The original configuration conversion script command remains fully compatible and unchanged. — bash <(curl -sSL https://raw.githubusercontent.com/fscarmen/tools/main/vision.sh)\\n 2. Quick Install Mode: Added a one-click installation feature that auto-fills all parameters, simplifying the deployment process. Chinese users can use -l or -L; English users can use -k or -K. Case-insensitive support makes operations more flexible.\\n 3. Custom Reality Key Support: In response to user feedback, you can now specify a custom Reality private key via --REALITY_PRIVATE=<privateKey>. The script will automatically compute the corresponding public key using the integrated API. If left blank, it generates a random private-public key pair in real-time.\\n 4. Enhanced HTTP + Reality Support in Clash Clients: Added full compatibility for HTTP + Reality transport in Clash clients, improving connection stability and performance."
-C[1]="\\n 1. Reality 配置变更：在 Reality 配置中，将原来的多路复用（multiplex）替换为 xtls-rprx-vision 流控，提升传输效率、降低延迟并增强安全性。原配置转换脚本命令—— bash <(curl -sSL https://raw.githubusercontent.com/fscarmen/tools/main/vision.sh)\\n 2. 极速安装模式：新增一键安装功能，所有参数自动填充，简化部署流程。中文用户使用 -l 或 -L，英文用户使用 -k 或 -K，大小写均支持，操作更灵活\\n 3. 自定义 Reality 密钥支持：响应用户反馈，现支持通过 --REALITY_PRIVATE=<privateKey> 指定自定义 Reality 私钥，脚本将调用相关 API 自动计算对应公钥。若留空，则实时生成随机公私钥对\\n 4. HTTP + Reality 在 Clash 客户端的增强支持：补充了对 Clash 客户端中 HTTP + Reality 传输方式的完整兼容，提升了连接稳定性和性能"
+E[1]="Argo tunnel creation via API. Suitable for users with large-scale deployments, one Token for all. Automatically completed: Create tunnel > DNS configuration > Origin settings. Thanks to [zmlu] for providing the method: https://raw.githubusercontent.com/zmlu/sba/main/tunnel.sh"
+C[1]="Argo 隧道新增通过 API 创建，适合大量部署的用户，一个 Token 走天下， 自动完成：创建隧道 > DNS 配置 > 回源设置。感谢热心网友 [zmlu] 提供的方法: https://raw.githubusercontent.com/zmlu/sba/main/tunnel.sh"
 E[2]="Downloading Sing-box. Please wait a seconds ..."
 C[2]="下载 Sing-box 中，请稍等 ..."
 E[3]="Input errors up to 5 times.The script is aborted."
@@ -54,8 +56,8 @@ E[12]="Please enter UUID \(Default is \${UUID_DEFAULT}\):"
 C[12]="请输入 UUID \(默认为 \${UUID_DEFAULT}\):"
 E[13]="Please enter the node name. \(Default is \${NODE_NAME_DEFAULT}\):"
 C[13]="请输入节点名称 \(默认为: \${NODE_NAME_DEFAULT}\):"
-E[14]="Node name only allow uppercase and lowercase letters and numeric characters, please re-enter \(\${a} times remaining\):"
-C[14]="节点名称只允许英文大小写及数字字符，请重新输入 \(剩余\${a}次\):"
+E[14]="Node name only allow uppercase and lowercase letters, numeric characters, hyphens, underscores, dots and @, please re-enter \(\${a} times remaining\):"
+C[14]="节点名称只允许英文大小写、数字、连字符、下划线、点和@字符，请重新输入 \(剩余\${a}次\):"
 E[15]="Sing-box script has not been installed yet."
 C[15]="Sing-box 脚本还没有安装"
 E[16]="Sing-box is completely uninstalled."
@@ -196,8 +198,8 @@ E[83]="To uninstall Nginx press [y], it is not uninstalled by default:"
 C[83]="如要卸载 Nginx 请按 [y]，默认不卸载:"
 E[84]="Set SElinux: enforcing --> disabled"
 C[84]="设置 SElinux: enforcing --> disabled"
-E[85]="Please input Argo Token or Json ( User can easily obtain the json at https://fscarmen.cloudflare.now.cc ):"
-C[85]="请输入 Argo Token 或者 Json ( 用户通过以下网站轻松获取 json: https://fscarmen.cloudflare.now.cc ):"
+E[85]="Please enter Argo Token, Argo Json or Cloudflare API\n\n [*] Token: Visit https://dash.cloudflare.com/ , Zero Trust > Networks > Connectors > Create a tunnel > Select Cloudflared\n\n [*] Json: Users can easily obtain it through the following website: https://fscarmen.cloudflare.now.cc\n\n [*] Cloudflare API: Visit https://dash.cloudflare.com/profile/api-tokens > Create Token > Create Custom Token > Add the following permissions:\n - Account > Cloudflare One Connectors: cloudflared > Edit\n - Zone > Zone > Read\n - Zone > DNS > Edit\n - Account Resources > Include > Required Account\n - Zone Resources > Include > Specific Zone > Required Domain"
+C[85]="请输入 Argo Token, Argo Json 或者 Cloudflare API\n\n [*] Token: 访问 https://dash.cloudflare.com/ ，Zero Trust > 网络 > 连接器 > 创建隧道 > 选择 Cloudflared\n\n [*] Json: 用户通过以下网站轻松获取: https://fscarmen.cloudflare.now.cc\n\n [*] Cloudflare API: 访问 https://dash.cloudflare.com/profile/api-tokens > 创建令牌 > 创建自定义令牌 > 添加以下权限:\n - 帐户 > Cloudflare One连接器: Cloudflared > 编辑\n - 区域 > 区域 > 读取\n - 区域 > DNS > 编辑\n - 帐户资源> 包括 > 所需账户\n - 区域资源 > 包括 > 特定区域 > 所需域名"
 E[86]="Argo authentication message does not match the rules, neither Token nor Json, script exits. Feedback:[https://github.com/fscarmen/sba/issues]"
 C[86]="Argo 认证信息不符合规则，既不是 Token，也是不是 Json，脚本退出，问题反馈:[https://github.com/fscarmen/sba/issues]"
 E[87]="Please input the Argo domain (Default is temporary domain if left blank):"
@@ -208,8 +210,8 @@ E[89]="( Additional dependencies: nginx )"
 C[89]="( 额外依赖: nginx )"
 E[90]="Argo tunnel is: \$ARGO_TYPE\\\n The domain is: \$ARGO_DOMAIN"
 C[90]="Argo 隧道类型为: \$ARGO_TYPE\\\n 域名是: \$ARGO_DOMAIN"
-E[91]="Argo tunnel type:\n 1. Try\n 2. Token or Json"
-C[91]="Argo 隧道类型:\n 1. Try\n 2. Token 或者 Json"
+E[91]="Argo tunnel type:\n 1. Try\n 2. Token or Json. Including created through Cloudflare API"
+C[91]="Argo 隧道类型:\n 1. Try\n 2. Token 或者 Json，包括通过 Cloudflare API 创建"
 E[92]="Change the Argo tunnel (sb -t)"
 C[92]="更换 Argo 隧道 (sb -t)"
 E[93]="Can't get the temporary tunnel domain, script exits. Feedback:[https://github.com/fscarmen/sing-box/issues]"
@@ -228,7 +230,7 @@ E[99]="The \${SING_BOX_SCRIPT} is detected to be installed. Script exits."
 C[99]="检测到已安装 \${SING_BOX_SCRIPT}，脚本退出!"
 E[100]="Can't get the official latest version. Script exits."
 C[100]="获取不到官方的最新版本，脚本退出!"
-E[101]=""
+E[101]="The privateKey should be a 43-character base64url encoding; please check."
 C[101]="privateKey 应该是43位的 base64url 编码，请检查"
 E[102]="Backing up old version sing-box to ${WORK_DIR}/sing-box.bak"
 C[102]="已备份旧版本 sing-box 到 ${WORK_DIR}/sing-box.bak"
@@ -259,7 +261,13 @@ C[114]="privateKey 私钥格式错误，应该为 43位 base64url 编码"
 E[115]="Quick install mode (all protocols + subscription) (sb -k)"
 C[115]="极速安装模式 (所有协议 + 订阅) (sb -l)"
 E[116]="Failed to generate publicKey from privateKey, using random privateKey"
-C[116]="从 privateKey 生成 publicKey失败，将使用随机公私钥"
+C[116]="从 privateKey 生成 publicKey 失败，将使用随机公私钥"
+E[117]="Failed to create Tunnel using Cloudflare API"
+C[117]="使用 Cloudflare API 创建 Tunnel 失败"
+E[118]="Please enter [Token, Json, API] value:"
+C[118]="请输入 [Token, Json, API] 的值:"
+E[119]="Using Cloudflare API to create Tunnel and handle DNS config..."
+C[119]="使用 Cloudflare API 创建 Tunnel 和处理 DNS 配置..."
 
 # 自定义字体彩色，read 函数
 warning() { echo -e "\033[31m\033[01m$*\033[0m"; }  # 红色
@@ -271,7 +279,19 @@ text() { grep -q '\$' <<< "${E[$*]}" && eval echo "\$(eval echo "\${${L}[$*]}")"
 
 # 检测是否需要启用 Github CDN，如能直接连通，则不使用
 check_cdn() {
-  [ -n "$GH_PROXY" ] && wget --server-response --quiet --output-document=/dev/null --no-check-certificate --tries=2 --timeout=3 ${GH_PROXY}https://raw.githubusercontent.com/fscarmen/sing-box/main/README.md >/dev/null 2>&1 || unset GH_PROXY
+  # 首先测试默认连接（不使用代理）
+  local DIRECT_STATUS_CODE=$(wget --server-response --spider --quiet --timeout=3 --tries=1 https://api.github.com/repos/SagerNet/sing-box/releases 2>&1 | grep "HTTP/" | awk '{print $2}')
+
+  if [ "$DIRECT_STATUS_CODE" != "200" ]; then
+    # 如果直连失败，则逐一测试各github proxy
+    for PROXY_URL in "${GITHUB_PROXY[@]}"; do
+      local PROXY_STATUS_CODE=$(wget --server-response --spider --quiet --timeout=3 --tries=1 ${PROXY_URL}https://api.github.com/repos/SagerNet/sing-box/releases 2>&1 | grep "HTTP/" | awk '{print $2}')
+      [ "$PROXY_STATUS_CODE" = "200" ] && GH_PROXY="$PROXY_URL" && break
+    done
+  else
+    # 直连成功，不使用代理
+    unset GH_PROXY
+  fi
 }
 
 # 检测是否解锁 chatGPT，以决定是否使用 warp 链式代理或者是 direct out，此处判断改编自 https://github.com/lmc999/RegionRestrictionCheck
@@ -386,6 +406,130 @@ change_cdn() {
   export_list; info "\n $(text 112) \n"
 }
 
+# 创建 Argo Tunnel API
+create_argo_tunnel() {
+  local CLOUDFLARE_API_TOKEN="$1"
+  local TUNNEL_NAME=${ARGO_DOMAIN%%.*}
+  local ROOT_DOMAIN=${ARGO_DOMAIN#*.}
+
+  # 步骤 1: 获取 Zone ID 和 Account ID
+  local ZONE_RESPONSE=$(wget --no-check-certificate -qO- \
+    --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    --header="Content-Type: application/json" \
+    "https://api.cloudflare.com/client/v4/zones?name=${ROOT_DOMAIN}")
+
+  local ZONE_ID=$(sed 's/.*"result":[ ]*[{"id:[ ]*"\([^"]*\)",.*/\1/' <<< $ZONE_RESPONSE)
+  [[ ! "$ZONE_ID" =~ ^[a-f0-9]{32}$ ]] && return 1
+
+  local ACCOUNT_ID=$(sed 's/.*account":[ ]*{"id":"\([^"]*\)",.*/\1/' <<< $ZONE_RESPONSE)
+  [[ ! "$ACCOUNT_ID" =~ ^[a-f0-9]{32}$ ]] && return 1
+
+  # 步骤 2: 查询并处理现有 Tunnel
+  local TUNNEL_LIST=$(wget --no-check-certificate -qO- \
+    --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    --header="Content-Type: application/json" \
+    "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/cfd_tunnel")
+
+  # 检查是否存在同名 Tunnel（可能有多个）；如果完全没有隧道，返回 {"result":null,"success":false,"errors":[{"code":7003,"message":"Could not route to /client/v4/accounts/cfd_tunnel, perhaps your object identifier is invalid?"}],"messages":[]}
+  ! grep -q '"code":7003' <<< $TUNNEL_LIST && grep -q '"name":"'$TUNNEL_NAME'"' <<< $TUNNEL_LIST && local EXISTING_TUNNEL_IDS=($(echo "$TUNNEL_LIST" | sed 's/},{/\n/g' | sed -n 's/.*"id":"\([^"]\+\)",.*"deleted_at":null,"name":"'$TUNNEL_NAME'".*/\1/gp'))
+
+  [[ "${#EXISTING_TUNNEL_IDS[@]}" > 0 ]] && \
+  for TUNNEL_ID_TO_DELETE in "${EXISTING_TUNNEL_IDS[@]}"; do
+    wget --no-check-certificate -qO- \
+      --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+      --header="Content-Type: application/json" \
+      --method=DELETE \
+      "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/cfd_tunnel/${TUNNEL_ID_TO_DELETE}" \
+      >/dev/null 2>&1
+  done
+
+  # 生成 Tunnel Secret (至少 32 字节的 base64 编码)
+  local TUNNEL_SECRET=$(openssl rand -base64 32)
+
+  # 创建新 Tunnel
+  local CREATE_RESPONSE=$(wget --no-check-certificate -qO- \
+    --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    --header="Content-Type: application/json" \
+    --post-data="{
+      \"name\": \"$TUNNEL_NAME\",
+      \"config_src\": \"cloudflare\",
+      \"tunnel_secret\": \"$TUNNEL_SECRET\"
+    }" \
+    "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/cfd_tunnel")
+
+  grep -q '"success":[ ]*true' <<< "$CREATE_RESPONSE" && \
+  [[ $CREATE_RESPONSE =~ \"id\":\"([^\"]+)\".*\"token\":\"([^\"]+)\" ]] && \
+  local TUNNEL_ID=${BASH_REMATCH[1]} TUNNEL_TOKEN=${BASH_REMATCH[2]} || \
+  return 1
+
+  # 步骤 2: 配置 Tunnel ingress 规则...
+  local CONFIG_RESPONSE=$(wget --no-check-certificate -qO- \
+    --method=PUT \
+    --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    --header="Content-Type: application/json" \
+    --body-data="{
+      \"config\": {
+        \"ingress\": [
+          {
+            \"service\": \"http://localhost:${PORT_NGINX}\",
+            \"hostname\": \"${ARGO_DOMAIN}\"
+          },
+          {
+            \"service\": \"http_status:404\"
+          }
+        ],
+        \"warp-routing\": {
+          \"enabled\": false
+        }
+      }
+    }" \
+    "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/cfd_tunnel/${TUNNEL_ID}/configurations")
+
+  ! grep -q '"success":[ ]*true' <<< $CONFIG_RESPONSE && return 1
+
+  # 步骤 3: 管理 DNS 记录
+  local DNS_LIST=$(wget --no-check-certificate -qO- \
+    --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+    --header="Content-Type: application/json" \
+    "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?type=CNAME&name=${ARGO_DOMAIN}")
+
+  local EXISTING_DNS_ID=$(sed 's/.*"result":[ ]*[{"id:[ ]*"\([^"]*\)",.*/\1/' <<< $DNS_LIST)
+
+  local DNS_PAYLOAD="{
+    \"name\": \"${ARGO_DOMAIN}\",
+    \"type\": \"CNAME\",
+    \"content\": \"${TUNNEL_ID}.cfargotunnel.com\",
+    \"proxied\": true,
+    \"settings\": {
+      \"flatten_cname\": false
+    }
+  }"
+
+  if [[ "$EXISTING_DNS_ID" =~ ^[a-f0-9]{32}$ ]]; then
+    # 发现现有 DNS 记录，使用 PATCH 更新
+    local DNS_RESPONSE=$(wget --no-check-certificate -qO- \
+      --method=PATCH \
+      --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+      --header="Content-Type: application/json" \
+      --body-data="$DNS_PAYLOAD" \
+      "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records/${EXISTING_DNS_ID}")
+  else
+    # 未找到现有 DNS 记录，使用 POST 创建
+    local DNS_RESPONSE=$(wget --no-check-certificate -qO- \
+      --method=POST \
+      --header="Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+      --header="Content-Type: application/json" \
+      --body-data="$DNS_PAYLOAD" \
+      "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records")
+  fi
+
+  ! grep -q '"success":[ ]*true' <<<"$DNS_RESPONSE" && return 1
+
+  # 返回 Argo Tunnel Token 或者 Json
+  ### echo "$TUNNEL_TOKEN"
+  echo "{\"AccountTag\":\"$ACCOUNT_ID\",\"TunnelSecret\":\"$TUNNEL_SECRET\",\"TunnelID\":\"$TUNNEL_ID\",\"Endpoint\":\"\"}"
+}
+
 # 输入 Nginx 服务端口
 input_nginx_port() {
   local NUM=$1
@@ -459,7 +603,7 @@ input_reality_key() {
 input_argo_auth() {
   local IS_CHANGE_ARGO=$1
   [ -n "$IS_CHANGE_ARGO" ] && local EMPTY_ERROR_TIME=5
-  local DOMAIN_ERROR_TIME=6
+  local DOMAIN_ERROR_TIME=6 ARGO_AUTH_LENGTH=40
 
   # 处理可能输入的错误，去掉开头和结尾的空格，去掉最后的 :
   if [ "$IS_CHANGE_ARGO" = 'is_change_argo' ]; then
@@ -478,20 +622,27 @@ input_argo_auth() {
     ARGO_RUNS="${WORK_DIR}/cloudflared tunnel --edge-ip-version auto --no-autoupdate --url http://localhost:$PORT_NGINX"
   elif [ -n "${ARGO_DOMAIN}" ]; then
     if [ -z "${ARGO_AUTH}" ]; then
-      until [[ "$ARGO_AUTH" =~ TunnelSecret || "$ARGO_AUTH" =~ ^[A-Z0-9a-z=]{120,250}$ || "$ARGO_AUTH" =~ .*cloudflared.*service[[:space:]]+install[[:space:]]+[A-Z0-9a-z=]{1,100} ]]; do
+      until [[ "$ARGO_AUTH" =~ TunnelSecret || "$ARGO_AUTH" =~ [A-Z0-9a-z=]{120,250}$ || "${#ARGO_AUTH}" = $ARGO_AUTH_LENGTH ]]; do
         [ "$DOMAIN_ERROR_TIME" != 6 ] && warning "\n $(text 86) \n"
       (( DOMAIN_ERROR_TIME-- )) || true
-        [ "$DOMAIN_ERROR_TIME" != 0 ] && reading "\n $(text 85) " ARGO_AUTH || error "\n $(text 3) \n"
+        [ "$DOMAIN_ERROR_TIME" != 0 ] && hint "\n $(text 85) \n " && reading "\n $(text 118) " ARGO_AUTH || error "\n $(text 3) \n"
       done
     fi
 
     # 根据 ARGO_AUTH 的内容，自行判断是 Json 还是 Token
-    if [[ "$ARGO_AUTH" =~ TunnelSecret ]]; then
+    if [[ "$ARGO_AUTH" =~ TunnelSecret || "${#ARGO_AUTH}" = $ARGO_AUTH_LENGTH ]]; then
+      if [[ "${#ARGO_AUTH}" = $ARGO_AUTH_LENGTH ]]; then
+        hint "\n $(text 119) \n "
+        local ARGO_API=$(create_argo_tunnel ${ARGO_AUTH})
+        [[ "$ARGO_API" =~ TunnelSecret ]] && ARGO_JSON=$ARGO_API || error "\n $(text 117) \n"
+      else
+        ARGO_JSON=${ARGO_AUTH//[ ]/}
+      fi
+
       ARGO_TYPE=is_json_argo
-      ARGO_JSON=${ARGO_AUTH//[ ]/}
       [ "$IS_CHANGE_ARGO" = 'is_install' ] && export_argo_json_file $TEMP_DIR || export_argo_json_file ${WORK_DIR}
       ARGO_RUNS="${WORK_DIR}/cloudflared tunnel --edge-ip-version auto --config ${WORK_DIR}/tunnel.yml run"
-    elif [[ "${ARGO_AUTH,,}" =~ .*[a-z0-9=]{120,250}$ ]]; then
+    elif [[ "${ARGO_AUTH}" =~ [A-Z0-9a-z=]{120,250}$ ]]; then
       ARGO_TYPE=is_token_argo
       ARGO_TOKEN=$(awk '{print $NF}' <<< "$ARGO_AUTH")
       ARGO_RUNS="${WORK_DIR}/cloudflared tunnel --edge-ip-version auto run --token ${ARGO_TOKEN}"
@@ -1218,7 +1369,6 @@ EOF
 # 生成100年的自签证书，区分使用 IPv4 / IPv6 / 域名
 ssl_certificate() {
   mkdir -p ${WORK_DIR}/cert
-  [[ $SERVER_IP =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$|^([0-9a-fA-F:]+)$ ]] && SAN_TYPE="IP" || SAN_TYPE="DNS"
   openssl ecparam -genkey -name prime256v1 -out ${WORK_DIR}/cert/private.key
 
   cat > ${WORK_DIR}/cert/cert.conf << EOF
@@ -1234,7 +1384,7 @@ CN = $(awk -F . '{print $(NF-1)"."$NF}' <<< "$TLS_SERVER_DEFAULT")
 subjectAltName = @alt_names
 
 [alt_names]
-${SAN_TYPE} = ${SERVER_IP}
+DNS = ${TLS_SERVER_DEFAULT}
 EOF
 
   openssl req -new -x509 -days 36500 -key ${WORK_DIR}/cert/private.key -out ${WORK_DIR}/cert/cert.pem -config ${WORK_DIR}/cert/cert.conf -extensions v3_req
@@ -1291,7 +1441,7 @@ http {
     default                    /;               # 默认路径
     ~*v2rayN                   /v2rayn;         # 匹配 V2rayN 客户端
     ~*clash                    /clash;          # 匹配 Clash 客户端
-    ~*Neko|Throne              /neko;           # 匹配 Neko 客户端
+    ~*Neko|Throne              /neko;           # 匹配 Neko / Throne 客户端
     ~*ShadowRocket             /shadowrocket;   # 匹配 ShadowRocket 客户端
     ~*SFM                      /sing-box-pc;    # 匹配 Sing-box pc 客户端
     ~*SFI|SFA                  /sing-box-phone; # 匹配 Sing-box phone 客户端
@@ -1331,15 +1481,7 @@ http {
   server {
     listen $PORT_NGINX ;  # ipv4
     listen [::]:$PORT_NGINX ;  # ipv6
-#    listen $PORT_NGINX ssl http2 ;  # https
     server_name localhost;
-
-#    ssl_certificate            ${WORK_DIR}/cert/cert.pem;
-#    ssl_certificate_key        ${WORK_DIR}/cert/private.key;
-#    ssl_protocols              TLSv1.3;
-#    ssl_session_tickets        on;
-#    ssl_stapling               off;
-#    ssl_stapling_verify        off;
 "
 
   [[ -n "$PORT_VMESS_WS" && "$IS_ARGO" = 'is_argo' ]] && NGINX_CONF+="
@@ -1688,7 +1830,6 @@ EOF
             "ignore_client_bandwidth":false,
             "tls":{
                 "enabled":true,
-                "server_name":"",
                 "alpn":[
                     "h3"
                 ],
@@ -2415,13 +2556,13 @@ export_list() {
 "
   if [ -n "$PORT_HYSTERIA2" ]; then
     [[ -n "$PORT_HOPPING_START" && -n "$PORT_HOPPING_END" ]] && local CLASH_HOPPING=" ports: ${PORT_HOPPING_START}-${PORT_HOPPING_END}, HopInterval: 60,"
-    local CLASH_HYSTERIA2="- {name: \"${NODE_NAME[12]} ${NODE_TAG[1]}\", type: hysteria2, server: ${SERVER_IP}, port: ${PORT_HYSTERIA2},${CLASH_HOPPING} up: \"200 Mbps\", down: \"1000 Mbps\", password: ${UUID[12]}, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256}}" &&
+    local CLASH_HYSTERIA2="- {name: \"${NODE_NAME[12]} ${NODE_TAG[1]}\", type: hysteria2, server: ${SERVER_IP}, port: ${PORT_HYSTERIA2},${CLASH_HOPPING} up: \"200 Mbps\", down: \"1000 Mbps\", password: ${UUID[12]}, sni: ${TLS_SERVER_DEFAULT}, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256}}" &&
     local CLASH_SUBSCRIBE+="
   $CLASH_HYSTERIA2
 "
   fi
 
-  [ -n "$PORT_TUIC" ] && local CLASH_TUIC="- {name: \"${NODE_NAME[13]} ${NODE_TAG[2]}\", type: tuic, server: ${SERVER_IP}, port: ${PORT_TUIC}, uuid: ${UUID[13]}, password: ${TUIC_PASSWORD}, alpn: [h3], disable-sni: true, reduce-rtt: true, request-timeout: 8000, udp-relay-mode: native, congestion-controller: $TUIC_CONGESTION_CONTROL, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256}}" &&
+  [ -n "$PORT_TUIC" ] && local CLASH_TUIC="- {name: \"${NODE_NAME[13]} ${NODE_TAG[2]}\", type: tuic, server: ${SERVER_IP}, port: ${PORT_TUIC}, uuid: ${UUID[13]}, password: ${TUIC_PASSWORD}, alpn: [h3], reduce-rtt: true, request-timeout: 8000, udp-relay-mode: native, congestion-controller: $TUIC_CONGESTION_CONTROL, sni: ${TLS_SERVER_DEFAULT}, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256}}" &&
   local CLASH_SUBSCRIBE+="
   $CLASH_TUIC
 "
@@ -2434,7 +2575,7 @@ export_list() {
   local CLASH_SUBSCRIBE+="
   $CLASH_SHADOWSOCKS
 "
-  [ -n "$PORT_TROJAN" ] && local CLASH_TROJAN="- {name: \"${NODE_NAME[16]} ${NODE_TAG[5]}\", type: trojan, server: ${SERVER_IP}, port: $PORT_TROJAN, password: $TROJAN_PASSWORD, client-fingerprint: firefox, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256}, smux: { enabled: true, protocol: 'h2mux', padding: true, max-connections: '8', min-streams: '16', statistic: true, only-tcp: false }, brutal-opts: { enabled: ${IS_BRUTAL}, up: '1000 Mbps', down: '1000 Mbps' } }" &&
+  [ -n "$PORT_TROJAN" ] && local CLASH_TROJAN="- {name: \"${NODE_NAME[16]} ${NODE_TAG[5]}\", type: trojan, server: ${SERVER_IP}, port: $PORT_TROJAN, password: $TROJAN_PASSWORD, client-fingerprint: firefox, sni: ${TLS_SERVER_DEFAULT}, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256}, smux: { enabled: true, protocol: 'h2mux', padding: true, max-connections: '8', min-streams: '16', statistic: true, only-tcp: false }, brutal-opts: { enabled: ${IS_BRUTAL}, up: '1000 Mbps', down: '1000 Mbps' } }" &&
   local CLASH_SUBSCRIBE+="
   $CLASH_TROJAN
 "
@@ -2488,7 +2629,7 @@ export_list() {
   $CLASH_GRPC_REALITY
 "
 
-  [ -n "$PORT_ANYTLS" ] && local CLASH_ANYTLS="- {name: \"${NODE_NAME[21]} ${NODE_TAG[10]}\", type: anytls, server: ${SERVER_IP}, port: $PORT_ANYTLS, password: ${UUID[21]}, client-fingerprint: firefox, udp: true, idle-session-check-interval: 30, idle-session-timeout: 30, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256} }" &&
+  [ -n "$PORT_ANYTLS" ] && local CLASH_ANYTLS="- {name: \"${NODE_NAME[21]} ${NODE_TAG[10]}\", type: anytls, server: ${SERVER_IP}, port: $PORT_ANYTLS, password: ${UUID[21]}, client-fingerprint: firefox, udp: true, idle-session-check-interval: 30, idle-session-timeout: 30, sni: ${TLS_SERVER_DEFAULT}, skip-cert-verify: false, fingerprint: ${SELF_SIGNED_FINGERPRINT_SHA256} }" &&
   local CLASH_SUBSCRIBE+="
   $CLASH_ANYTLS
 "
@@ -2518,11 +2659,11 @@ vless://$(echo -n "auto:${UUID[11]}@${SERVER_IP_2}:${PORT_XTLS_REALITY}" | base6
   if [ -n "$PORT_HYSTERIA2" ]; then
     [[ -n "$PORT_HOPPING_START" && -n "$PORT_HOPPING_END" ]] && local SHADOWROCKET_HOPPING="&mport=${PORT_HYSTERIA2},${PORT_HOPPING_START}-${PORT_HOPPING_END}"
     local SHADOWROCKET_SUBSCRIBE+="
-hysteria2://${UUID[12]}@${SERVER_IP_1}:${PORT_HYSTERIA2}?hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}&obfs=none${SHADOWROCKET_HOPPING}#${NODE_NAME[12]// /%20}%20${NODE_TAG[1]}
+hysteria2://${UUID[12]}@${SERVER_IP_1}:${PORT_HYSTERIA2}?peer=${TLS_SERVER_DEFAULT}&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}&obfs=none${SHADOWROCKET_HOPPING}#${NODE_NAME[12]// /%20}%20${NODE_TAG[1]}
 "
   fi
   [ -n "$PORT_TUIC" ] && local SHADOWROCKET_SUBSCRIBE+="
-tuic://${TUIC_PASSWORD}:${UUID[13]}@${SERVER_IP_2}:${PORT_TUIC}?congestion_control=$TUIC_CONGESTION_CONTROL&udp_relay_mode=native&alpn=h3&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}#${NODE_NAME[13]// /%20}%20${NODE_TAG[2]}
+tuic://${TUIC_PASSWORD}:${UUID[13]}@${SERVER_IP_2}:${PORT_TUIC}?peer=${TLS_SERVER_DEFAULT}&congestion_control=$TUIC_CONGESTION_CONTROL&udp_relay_mode=native&alpn=h3&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}#${NODE_NAME[13]// /%20}%20${NODE_TAG[2]}
 "
   [ -n "$PORT_SHADOWTLS" ] && local SHADOWROCKET_SUBSCRIBE+="
 ss://$(echo -n "$SHADOWTLS_METHOD:$SHADOWTLS_PASSWORD@${SERVER_IP_2}:${PORT_SHADOWTLS}" | base64 -w0)?shadow-tls=$(echo -n "{\"version\":\"3\",\"host\":\"${TLS_SERVER[14]}\",\"password\":\"${UUID[14]}\"}" | base64 -w0)#${NODE_NAME[14]// /%20}%20${NODE_TAG[3]}
@@ -2531,7 +2672,7 @@ ss://$(echo -n "$SHADOWTLS_METHOD:$SHADOWTLS_PASSWORD@${SERVER_IP_2}:${PORT_SHAD
 ss://$(echo -n "${SHADOWSOCKS_METHOD}:${UUID[15]}@${SERVER_IP_2}:$PORT_SHADOWSOCKS" | base64 -w0)#${NODE_NAME[15]// /%20}%20${NODE_TAG[4]}
 "
   [ -n "$PORT_TROJAN" ] && local SHADOWROCKET_SUBSCRIBE+="
-trojan://$TROJAN_PASSWORD@${SERVER_IP_1}:$PORT_TROJAN?peer=${TLS_SERVER_DEFAULT}&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}#${NODE_NAME[16]// /%20}%20${NODE_TAG[5]}
+trojan://${TROJAN_PASSWORD}@${SERVER_IP_1}:$PORT_TROJAN?peer=${TLS_SERVER_DEFAULT}&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}#${NODE_NAME[16]// /%20}%20${NODE_TAG[5]}
 "
   if [ -n "$PORT_VMESS_WS" ]; then
      if [[ "${STATUS[1]}" =~ $(text 27)|$(text 28) ]] || [[ "$IS_ARGO" = 'is_argo' && "$NONINTERACTIVE_INSTALL" = 'noninteractive_install' ]]; then
@@ -2579,7 +2720,7 @@ vless://$(echo -n auto:${UUID[19]}@${SERVER_IP_2}:${PORT_H2_REALITY} | base64 -w
 vless://$(echo -n "auto:${UUID[20]}@${SERVER_IP_2}:${PORT_GRPC_REALITY}" | base64 -w0)?remarks=${NODE_NAME[20]// /%20}%20${NODE_TAG[9]}&path=grpc&obfs=grpc&tls=1&peer=${TLS_SERVER[20]}&pbk=${REALITY_PUBLIC[20]}
 "
   [ -n "$PORT_ANYTLS" ] && local SHADOWROCKET_SUBSCRIBE+="
-anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}?udp=1&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}#${NODE_NAME[21]// /%20}%20${NODE_TAG[10]}
+anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}?peer=${TLS_SERVER_DEFAULT}&udp=1&hpkp=${SELF_SIGNED_FINGERPRINT_SHA256}#${NODE_NAME[21]// /%20}%20${NODE_TAG[10]}
 "
   echo -n "$SHADOWROCKET_SUBSCRIBE" | sed -E '/^[ ]*#|^--/d' | sed '/^$/d' | base64 -w0 > ${WORK_DIR}/subscribe/shadowrocket
 
@@ -2590,11 +2731,11 @@ vless://${UUID[11]}@${SERVER_IP_1}:${PORT_XTLS_REALITY}?encryption=none${VISION_
 
   [ -n "$PORT_HYSTERIA2" ] && local V2RAYN_SUBSCRIBE+="
 ----------------------------
-hysteria2://${UUID[12]}@${SERVER_IP_1}:${PORT_HYSTERIA2}/?alpn=h3&insecure=1#${NODE_NAME[12]// /%20}%20${NODE_TAG[1]}"
+hysteria2://${UUID[12]}@${SERVER_IP_1}:${PORT_HYSTERIA2}?sni=${TLS_SERVER_DEFAULT}&alpn=h3&insecure=1&allowInsecure=1#${NODE_NAME[12]// /%20}%20${NODE_TAG[1]}"
 
   [ -n "$PORT_TUIC" ] && local V2RAYN_SUBSCRIBE+="
 ----------------------------
-tuic://${UUID[13]}:${TUIC_PASSWORD}@${SERVER_IP_1}:${PORT_TUIC}?alpn=h3&insecure=1&congestion_control=$TUIC_CONGESTION_CONTROL#${NODE_NAME[13]// /%20}%20${NODE_TAG[2]}"
+tuic://${UUID[13]}:${TUIC_PASSWORD}@${SERVER_IP_1}:${PORT_TUIC}?sni=${TLS_SERVER_DEFAULT}&alpn=h3&insecure=1&allowInsecure=1&congestion_control=$TUIC_CONGESTION_CONTROL#${NODE_NAME[13]// /%20}%20${NODE_TAG[2]}"
 
   [ -n "$PORT_SHADOWTLS" ] && local V2RAYN_SUBSCRIBE+="
 ----------------------------
@@ -2653,7 +2794,7 @@ ss://$(echo -n "${SHADOWSOCKS_METHOD}:${UUID[15]}@${SERVER_IP_1}:$PORT_SHADOWSOC
 
   [ -n "$PORT_TROJAN" ] && local V2RAYN_SUBSCRIBE+="
 ----------------------------
-trojan://$TROJAN_PASSWORD@${SERVER_IP_1}:$PORT_TROJAN?security=tls&insecure=1&type=tcp&headerType=none#${NODE_NAME[16]// /%20}%20${NODE_TAG[5]}"
+trojan://$TROJAN_PASSWORD@${SERVER_IP_1}:$PORT_TROJAN?security=tls&sni=${TLS_SERVER_DEFAULT}&insecure=1&type=tcp&headerType=none#${NODE_NAME[16]// /%20}%20${NODE_TAG[5]}"
 
   if [ -n "$PORT_VMESS_WS" ]; then
      if [[ "${STATUS[1]}" =~ $(text 27)|$(text 28) ]] || [[ "$IS_ARGO" = 'is_argo' && "$NONINTERACTIVE_INSTALL" = 'noninteractive_install' ]]; then
@@ -2701,26 +2842,25 @@ vless://${UUID[20]}@${SERVER_IP_1}:${PORT_GRPC_REALITY}?encryption=none&security
 
   [ -n "$PORT_ANYTLS" ] && local V2RAYN_SUBSCRIBE+="
 ----------------------------
-anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}?security=tls&fp=firefox&insecure=1&type=tcp#${NODE_NAME[21]// /%20}%20${NODE_TAG[10]}"
+anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}?security=tls&sni=${TLS_SERVER_DEFAULT}&fp=firefox&insecure=1&allowInsecure=1&type=tcp#${NODE_NAME[21]// /%20}%20${NODE_TAG[10]}"
 
   echo -n "$V2RAYN_SUBSCRIBE" | sed -E '/^[ ]*#|^[ ]+|^--|^\{|^\}/d' | sed '/^$/d' | base64 -w0 > ${WORK_DIR}/subscribe/v2rayn
 
   # 生成 NekoBox 订阅文件
   [ -n "$PORT_XTLS_REALITY" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-vless://${UUID[11]}@${SERVER_IP_1}:${PORT_XTLS_REALITY}?security=reality&sni=${TLS_SERVER[11]}&fp=firefox&pbk=${REALITY_PUBLIC[11]}&type=tcp${VISION_FLOW}&encryption=none#${NODE_NAME[11]}%20${NODE_TAG[0]}"
+vless://${UUID[11]}@${SERVER_IP_1}:${PORT_XTLS_REALITY}?security=reality&sni=${TLS_SERVER[11]}&fp=firefox&pbk=${REALITY_PUBLIC[11]}&type=tcp${VISION_FLOW}&encryption=none#${NODE_NAME[11]// /%20}%20${NODE_TAG[0]}"
 
   if [ -n "$PORT_HYSTERIA2" ]; then
     [[ -n "$PORT_HOPPING_START" && -n "$PORT_HOPPING_END" ]] && NEKOBOX_HOPPING="mport=${PORT_HOPPING_START}-${PORT_HOPPING_END}&"
     local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-hy2://${UUID[12]}@${SERVER_IP_1}:${PORT_HYSTERIA2}?${NEKOBOX_HOPPING}insecure=1#${NODE_NAME[12]}%20${NODE_TAG[1]}"
+hy2://${UUID[12]}@${SERVER_IP_1}:${PORT_HYSTERIA2}?${NEKOBOX_HOPPING}insecure=1&sni=${TLS_SERVER_DEFAULT}#${NODE_NAME[12]// /%20}%20${NODE_TAG[1]}"
   fi
 
   [ -n "$PORT_TUIC" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-tuic://${TUIC_PASSWORD}:${UUID[13]}@${SERVER_IP_1}:${PORT_TUIC}?congestion_control=$TUIC_CONGESTION_CONTROL&alpn=h3&udp_relay_mode=native&allow_insecure=1&disable_sni=1#${NODE_NAME[13]}%20${NODE_TAG[2]}"
-
+tuic://${TUIC_PASSWORD}:${UUID[13]}@${SERVER_IP_1}:${PORT_TUIC}?congestion_control=$TUIC_CONGESTION_CONTROL&alpn=h3&sni=${TLS_SERVER_DEFAULT}&udp_relay_mode=native&allow_insecure=1#${NODE_NAME[13]// /%20}%20${NODE_TAG[2]}"
   [ -n "$PORT_SHADOWTLS" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
 nekoray://custom#$(echo -n "{\"_v\":0,\"addr\":\"127.0.0.1\",\"cmd\":[\"\"],\"core\":\"internal\",\"cs\":\"{\n    \\\"password\\\": \\\"${UUID[14]}\\\",\n    \\\"server\\\": \\\"${SERVER_IP_1}\\\",\n    \\\"server_port\\\": ${PORT_SHADOWTLS},\n    \\\"tag\\\": \\\"shadowtls-out\\\",\n    \\\"tls\\\": {\n        \\\"enabled\\\": true,\n        \\\"server_name\\\": \\\"${TLS_SERVER[14]}\\\"\n    },\n    \\\"type\\\": \\\"shadowtls\\\",\n    \\\"version\\\": 3\n}\n\",\"mapping_port\":0,\"name\":\"1-tls-not-use\",\"port\":1080,\"socks_port\":0}" | base64 -w0)
@@ -2729,11 +2869,11 @@ nekoray://shadowsocks#$(echo -n "{\"_v\":0,\"method\":\"$SHADOWTLS_METHOD\",\"na
 
   [ -n "$PORT_SHADOWSOCKS" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-ss://$(echo -n "${SHADOWSOCKS_METHOD}:${UUID[15]}" | base64 -w0)@${SERVER_IP_1}:$PORT_SHADOWSOCKS#${NODE_NAME[15]}%20${NODE_TAG[4]}"
+ss://$(echo -n "${SHADOWSOCKS_METHOD}:${UUID[15]}" | base64 -w0)@${SERVER_IP_1}:$PORT_SHADOWSOCKS#${NODE_NAME[15]// /%20}%20${NODE_TAG[4]}"
 
   [ -n "$PORT_TROJAN" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-trojan://$TROJAN_PASSWORD@${SERVER_IP_1}:$PORT_TROJAN?security=tls&allowInsecure=1&fp=firefox&type=tcp#${NODE_NAME[16]}%20${NODE_TAG[5]}"
+trojan://${TROJAN_PASSWORD}@${SERVER_IP_1}:$PORT_TROJAN?security=tls&sni=${TLS_SERVER_DEFAULT}&allowInsecure=1&fp=firefox&type=tcp#${NODE_NAME[16]// /%20}%20${NODE_TAG[5]}"
 
   if [ -n "$PORT_VMESS_WS" ]; then
      if [[ "${STATUS[1]}" =~ $(text 27)|$(text 28) ]] || [[ "$IS_ARGO" = 'is_argo' && "$NONINTERACTIVE_INSTALL" = 'noninteractive_install' ]]; then
@@ -2757,7 +2897,7 @@ vmess://$(echo -n "{\"add\":\"${CDN[17]}\",\"aid\":\"0\",\"host\":\"$VMESS_HOST_
      if [[ "${STATUS[1]}" =~ $(text 27)|$(text 28) ]] || [[ "$IS_ARGO" = 'is_argo' && "$NONINTERACTIVE_INSTALL" = 'noninteractive_install' ]]; then
       local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-vless://${UUID[18]}@${CDN[18]}:443?security=tls&sni=$ARGO_DOMAIN&type=ws&path=/$VLESS_WS_PATH?ed%3D2560&host=$ARGO_DOMAIN&encryption=zero#${NODE_NAME[18]}%20${NODE_TAG[7]}"
+vless://${UUID[18]}@${CDN[18]}:443?security=tls&sni=$ARGO_DOMAIN&type=ws&path=/$VLESS_WS_PATH?ed%3D2560&host=$ARGO_DOMAIN&encryption=zero#${NODE_NAME[18]// /%20}%20${NODE_TAG[7]}"
       [ "$ARGO_TYPE" = 'is_token_argo' ] && NEKOBOX_SUBSCRIBE+="
 
   # $(text 94)
@@ -2765,7 +2905,7 @@ vless://${UUID[18]}@${CDN[18]}:443?security=tls&sni=$ARGO_DOMAIN&type=ws&path=/$
     else
       WS_SERVER_IP_SHOW=${WS_SERVER_IP[18]} && TYPE_HOST_DOMAIN=$VLESS_HOST_DOMAIN && TYPE_PORT_WS=$PORT_VLESS_WS && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-vless://${UUID[18]}@${CDN[18]}:443?security=tls&sni=$VLESS_HOST_DOMAIN&type=ws&path=/$VLESS_WS_PATH?ed%3D2560&host=$VLESS_HOST_DOMAIN&encryption=zero#${NODE_NAME[18]}%20${NODE_TAG[7]}
+vless://${UUID[18]}@${CDN[18]}:443?security=tls&sni=$VLESS_HOST_DOMAIN&type=ws&path=/$VLESS_WS_PATH?ed%3D2560&host=$VLESS_HOST_DOMAIN&encryption=zero#${NODE_NAME[18]// /%20}%20${NODE_TAG[7]}
 
 # $(text 52)"
     fi
@@ -2773,15 +2913,15 @@ vless://${UUID[18]}@${CDN[18]}:443?security=tls&sni=$VLESS_HOST_DOMAIN&type=ws&p
 
   [ -n "$PORT_H2_REALITY" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-vless://${UUID[19]}@${SERVER_IP_1}:${PORT_H2_REALITY}?security=reality&sni=${TLS_SERVER[19]}&alpn=h2&fp=firefox&pbk=${REALITY_PUBLIC[19]}&type=http&encryption=none#${NODE_NAME[19]}%20${NODE_TAG[8]}"
+vless://${UUID[19]}@${SERVER_IP_1}:${PORT_H2_REALITY}?security=reality&sni=${TLS_SERVER[19]}&alpn=h2&fp=firefox&pbk=${REALITY_PUBLIC[19]// /%20}&type=http&encryption=none#${NODE_NAME[19]// /%20}%20${NODE_TAG[8]}"
 
   [ -n "$PORT_GRPC_REALITY" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-vless://${UUID[20]}@${SERVER_IP_1}:${PORT_GRPC_REALITY}?security=reality&sni=${TLS_SERVER[20]}&fp=firefox&pbk=${REALITY_PUBLIC[20]}&type=grpc&serviceName=grpc&encryption=none#${NODE_NAME[20]}%20${NODE_TAG[9]}"
+vless://${UUID[20]}@${SERVER_IP_1}:${PORT_GRPC_REALITY}?security=reality&sni=${TLS_SERVER[20]}&fp=firefox&pbk=${REALITY_PUBLIC[20]// /%20}&type=grpc&serviceName=grpc&encryption=none#${NODE_NAME[20]// /%20}%20${NODE_TAG[9]}"
 
   [ -n "$PORT_ANYTLS" ] && local NEKOBOX_SUBSCRIBE+="
 ----------------------------
-anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}/?insecure=1#${NODE_NAME[21]}%20${NODE_TAG[10]}"
+anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}?security=tls&sni=${TLS_SERVER_DEFAULT}&insecure=1&fp=firefox#${NODE_NAME[21]// /%20}%20${NODE_TAG[10]}"
 
   echo -n "$NEKOBOX_SUBSCRIBE" | sed -E '/^[ ]*#|^--/d' | sed '/^$/d' | base64 -w0 > ${WORK_DIR}/subscribe/neko
 
@@ -2793,12 +2933,12 @@ anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}/?insecure=1#${NODE_NAME[21]}%
   if [ -n "$PORT_HYSTERIA2" ]; then
     local INBOUND_REPLACE+=" { \"type\": \"hysteria2\", \"tag\": \"${NODE_NAME[12]} ${NODE_TAG[1]}\", \"server\": \"${SERVER_IP}\", \"server_port\": ${PORT_HYSTERIA2},"
     [[ -n "${PORT_HOPPING_START}" && -n "${PORT_HOPPING_END}" ]] && local INBOUND_REPLACE+=" \"server_ports\": [ \"${PORT_HOPPING_START}:${PORT_HOPPING_END}\" ],"
-    local INBOUND_REPLACE+=" \"up_mbps\": 200, \"down_mbps\": 1000, \"password\": \"${UUID[12]}\", \"tls\": { \"enabled\": true, \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"server_name\": \"\", \"alpn\": [ \"h3\" ] } },"
+    local INBOUND_REPLACE+=" \"up_mbps\": 200, \"down_mbps\": 1000, \"password\": \"${UUID[12]}\", \"tls\": { \"enabled\": true, \"server_name\": \"${TLS_SERVER_DEFAULT}\", \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"alpn\": [ \"h3\" ] } },"
     local NODE_REPLACE+="\"${NODE_NAME[12]} ${NODE_TAG[1]}\","
   fi
 
   [ -n "$PORT_TUIC" ] &&
-  local TUIC_INBOUND=" { \"type\": \"tuic\", \"tag\": \"${NODE_NAME[13]} ${NODE_TAG[2]}\", \"server\": \"${SERVER_IP}\", \"server_port\": ${PORT_TUIC}, \"uuid\": \"${UUID[13]}\", \"password\": \"${TUIC_PASSWORD}\", \"congestion_control\": \"$TUIC_CONGESTION_CONTROL\", \"udp_relay_mode\": \"native\", \"zero_rtt_handshake\": false, \"heartbeat\": \"10s\", \"tls\": { \"enabled\": true, \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"server_name\": \"\", \"alpn\": [ \"h3\" ] } }," &&
+  local TUIC_INBOUND=" { \"type\": \"tuic\", \"tag\": \"${NODE_NAME[13]} ${NODE_TAG[2]}\", \"server\": \"${SERVER_IP}\", \"server_port\": ${PORT_TUIC}, \"uuid\": \"${UUID[13]}\", \"password\": \"${TUIC_PASSWORD}\", \"congestion_control\": \"$TUIC_CONGESTION_CONTROL\", \"udp_relay_mode\": \"native\", \"zero_rtt_handshake\": false, \"heartbeat\": \"10s\", \"tls\": { \"enabled\": true, \"server_name\": \"${TLS_SERVER_DEFAULT}\", \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"alpn\": [ \"h3\" ] } }," &&
   local INBOUND_REPLACE+="${TUIC_INBOUND}" &&
   local NODE_REPLACE+="\"${NODE_NAME[13]} ${NODE_TAG[2]}\","
 
@@ -2812,7 +2952,7 @@ anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}/?insecure=1#${NODE_NAME[21]}%
   local NODE_REPLACE+="\"${NODE_NAME[15]} ${NODE_TAG[4]}\","
 
   [ -n "$PORT_TROJAN" ] &&
-  local INBOUND_REPLACE+=" { \"type\": \"trojan\", \"tag\": \"${NODE_NAME[16]} ${NODE_TAG[5]}\", \"server\": \"${SERVER_IP}\", \"server_port\": $PORT_TROJAN, \"password\": \"$TROJAN_PASSWORD\", \"tls\": { \"enabled\": true, \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"server_name\":\"\", \"utls\": { \"enabled\":true, \"fingerprint\":\"firefox\" } }, \"multiplex\": { \"enabled\":true, \"protocol\":\"h2mux\", \"max_connections\": 8, \"min_streams\": 16, \"padding\": true, \"brutal\":{ \"enabled\":${IS_BRUTAL}, \"up_mbps\":1000, \"down_mbps\":1000 } } }," &&
+  local INBOUND_REPLACE+=" { \"type\": \"trojan\", \"tag\": \"${NODE_NAME[16]} ${NODE_TAG[5]}\", \"server\": \"${SERVER_IP}\", \"server_port\": $PORT_TROJAN, \"password\": \"$TROJAN_PASSWORD\", \"tls\": { \"enabled\": true, \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"server_name\":\"${TLS_SERVER_DEFAULT}\", \"utls\": { \"enabled\":true, \"fingerprint\":\"firefox\" } }, \"multiplex\": { \"enabled\":true, \"protocol\":\"h2mux\", \"max_connections\": 8, \"min_streams\": 16, \"padding\": true, \"brutal\":{ \"enabled\":${IS_BRUTAL}, \"up_mbps\":1000, \"down_mbps\":1000 } } }," &&
   local NODE_REPLACE+="\"${NODE_NAME[16]} ${NODE_TAG[5]}\","
 
   if [ -n "$PORT_VMESS_WS" ]; then
@@ -2858,7 +2998,7 @@ anytls://${UUID[21]}@${SERVER_IP_1}:${PORT_ANYTLS}/?insecure=1#${NODE_NAME[21]}%
   local NODE_REPLACE+="\"${NODE_NAME[20]} ${NODE_TAG[9]}\","
 
   [ -n "$PORT_ANYTLS" ] &&
-  local INBOUND_REPLACE+=" { \"type\": \"anytls\", \"tag\": \"${NODE_NAME[21]} ${NODE_TAG[10]}\", \"server\": \"${SERVER_IP}\", \"server_port\": ${PORT_ANYTLS}, \"password\": \"${UUID[21]}\", \"idle_session_check_interval\": \"30s\", \"idle_session_timeout\": \"30s\", \"min_idle_session\": 5, \"tls\": { \"enabled\": true, \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"server_name\": \"\" } }," &&
+  local INBOUND_REPLACE+=" { \"type\": \"anytls\", \"tag\": \"${NODE_NAME[21]} ${NODE_TAG[10]}\", \"server\": \"${SERVER_IP}\", \"server_port\": ${PORT_ANYTLS}, \"password\": \"${UUID[21]}\", \"idle_session_check_interval\": \"30s\", \"idle_session_timeout\": \"30s\", \"min_idle_session\": 5, \"tls\": { \"enabled\": true, \"certificate_public_key_sha256\": [\"$SELF_SIGNED_FINGERPRINT_BASE64\"], \"server_name\": \"${TLS_SERVER_DEFAULT}\", \"utls\": { \"enabled\": true, \"fingerprint\": \"firefox\" } } }," &&
   local NODE_REPLACE+="\"${NODE_NAME[21]} ${NODE_TAG[10]}\","
 
   # 模板1
@@ -3556,7 +3696,7 @@ menu_setting() {
     OPTION[8]="8.  $(text 69)"
     OPTION[9]="9.  $(text 76)"
 
-    ACTION[1]() { IS_FAST_INSTALL='is_fast_install';   CHOOSE_PROTOCOLS=${CHOOSE_PROTOCOLS:-'a'}; START_PORT=${START_PORT:-"$START_PORT_DEFAULT"}; CDN=${CDN:-"${CDN_DOMAIN[0]}"}; IS_SUB='is_sub'; IS_ARGO='is_argo'; PORT_HOPPING_RANGE=${PORT_HOPPING_RANGE:-'50000:51000'}; install_sing-box; export_list install; create_shortcut; exit; }
+    ACTION[1]() { IS_FAST_INSTALL='is_fast_install'; CHOOSE_PROTOCOLS=${CHOOSE_PROTOCOLS:-'a'}; START_PORT=${START_PORT:-"$START_PORT_DEFAULT"}; CDN=${CDN:-"${CDN_DOMAIN[0]}"}; IS_SUB='is_sub'; IS_ARGO='is_argo'; PORT_HOPPING_RANGE=${PORT_HOPPING_RANGE:-'50000:51000'}; install_sing-box; export_list install; create_shortcut; exit; }
     ACTION[2]() { IS_SUB=is_sub; IS_ARGO=is_argo; install_sing-box; export_list install; create_shortcut; exit; }
     ACTION[3]() { IS_SUB=no_sub; IS_ARGO=is_argo; install_sing-box; export_list install; create_shortcut; exit; }
     ACTION[4]() { IS_SUB=is_sub; IS_ARGO=no_argo; install_sing-box; export_list install; create_shortcut; exit; }
@@ -3735,7 +3875,6 @@ done
 
 check_root
 check_arch
-check_system_info
 check_dependencies
 check_system_ip
 check_install
